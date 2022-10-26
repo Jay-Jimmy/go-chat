@@ -1,4 +1,4 @@
-package net
+package znet
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ type Server struct {
 	IPVersion string
 	IP        string
 	Port      int
+	Router    iface.IRouter
 }
 
 func (s *Server) Start() {
@@ -27,27 +28,19 @@ func (s *Server) Start() {
 			return
 		}
 		fmt.Printf("[Running] Server %s starting succeess,listening at %s:%d\n", s.Name, s.IP, s.Port)
+		var cid uint32
+		cid = 0
 		for {
 			conn, err := listener.AcceptTCP()
 			if err != nil {
 				fmt.Printf("Accept error:", err)
 				continue
 			}
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Printf("Receive buffer error:", err)
-						continue
-					}
-					fmt.Printf("Receive client buf: %s, cnt=%d\n", buf, cnt)
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Printf("Write back buffer error:", err)
-						continue
-					}
-				}
-			}()
+			//实例化自定义链接
+			dealConn := NewConnection(conn, cid, s.Router)
+			cid++
+
+			go dealConn.Start()
 		}
 	}()
 }
@@ -61,12 +54,18 @@ func (s *Server) Serve() {
 	select {}
 }
 
+func (s *Server) AddRouter(router iface.IRouter) {
+	s.Router = router
+	fmt.Printf("Add router succ\n")
+}
+
 func NewServer(name string) iface.IServer {
 	s := &Server{
 		Name:      name,
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 	return s
 }

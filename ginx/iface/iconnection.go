@@ -8,7 +8,7 @@ type IConnection interface {
 	//停止链接
 	Stop()
 	//获取当前链接绑定的socket conn
-	GetTCPConnection() net.TCPConn
+	GetTCPConnection() *net.TCPConn
 	//获取当前的链接ID
 	GetConnID() uint32
 	//获取远程客户端的TCP状态IP PORT
